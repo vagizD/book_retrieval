@@ -122,6 +122,8 @@ BOOK_INDEX_DIR=data/dev streamlit run app.py
 The model and Chroma collection are cached per app process. The app does not
 re-embed the corpus at startup. Missing or malformed artifacts and failed
 queries produce visitor-friendly messages rather than exposed tracebacks.
+Linux deployments install the official CPU-only Torch wheel; no CUDA runtime or
+GPU is required.
 
 ## Chroma design
 
