@@ -1,17 +1,19 @@
 # Between the Lines
 
-Find books by meaning, not keywords. This repository will contain a semantic
-book recommendation engine for Duke AIPI 510. A query will be embedded with
-`sentence-transformers/all-MiniLM-L6-v2` and compared with a precomputed book
-description index using normalized NumPy dot products.
+Find books by meaning, not keywords. This repository contains a semantic book
+recommendation engine for Duke AIPI 510. Book descriptions are embedded offline
+with `sentence-transformers/all-MiniLM-L6-v2` and stored in a persistent Chroma
+collection. The deployed app will query Chroma; normalized NumPy retrieval is
+retained as an exact, independently tested reference implementation.
 
 ## Current status
 
-Phases 1 and 2 are complete. The retrieval module performs exact normalized
-cosine scoring with NumPy and uses `np.argpartition` before sorting the selected
-top-k rows. Synthetic tests cover ranking, result counts, malformed vectors,
-alignment errors, blank queries, and empty corpora without downloading a model.
-Preprocessing, indexing, and the Streamlit UI are not implemented yet.
+Phases 1-3 are complete. The offline pipeline now cleans and deduplicates a
+streamed source, performs deterministic seeded sampling, creates normalized
+embeddings, writes aligned CSV/NumPy/JSON artifacts, and batch-ingests them into
+an embedded Chroma cosine collection. Tests exercise the complete pipeline with
+a fake embedder and temporary persistent Chroma client, so tests do not download a
+dataset or transformer. The Streamlit UI is not implemented yet.
 
 ## Verified dataset facts
 
@@ -43,11 +45,11 @@ must be proposed before changing sources.
 
 ## Planned repository boundaries
 
-- `src/retrieval.py`: online NumPy scoring and top-k selection
+- `src/retrieval.py`: exact NumPy scoring reference implementation
 - `src/preprocessing.py`: cleaning, deduplication, and deterministic sampling
-- `src/embeddings.py`: offline embedding generation and artifact validation
+- `src/embeddings.py`: embedding, artifact validation, and Chroma ingestion
 - `scripts/build_index.py`: reproducible command-line indexing pipeline
-- `app.py`: cached Streamlit UI over precomputed artifacts
+- `app.py`: cached Streamlit UI over the persistent Chroma collection
 
 The index contract fixes the model to
 `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions), defaults to 20,000
@@ -64,12 +66,52 @@ pytest
 python scripts/build_index.py --help
 ```
 
-The build command currently exposes the final CLI contract but exits with a
-clear Phase 3 message if invoked beyond `--help`.
+### Build a small development index
+
+This scans only 5,000 source rows and is intended to verify the environment,
+not to create the production corpus:
+
+```bash
+python scripts/build_index.py \
+  --max-books 100 \
+  --source-limit 5000 \
+  --output-dir data/dev
+```
+
+The first run downloads the source shard and MiniLM model. CPU is the default.
+Generated files are `books.csv`, `embeddings.npy`, `manifest.json`, and the
+`chroma/` persistence directory beneath the selected output directory.
+
+### Build the complete index
+
+```bash
+python scripts/build_index.py --max-books 20000 --seed 42
+```
+
+The complete build scans the streamed source rather than taking its first
+20,000 rows. Selection is determined by a seeded SHA-256 priority, and output
+rows are stored in a stable order. The manifest records the immutable Hugging
+Face revision resolved at build time, model, dimensions, row count, seed,
+collection name, and corpus fingerprint. Re-running the command recreates the
+named Chroma collection to prevent stale rows.
+
+Do not use `--source-limit` for a production build because it intentionally
+limits selection to an ordered prefix of the source.
+
+## Chroma design
+
+The pipeline uses `chromadb.PersistentClient(path="data/chroma")` and explicit
+precomputed MiniLM embeddings. Each Chroma record contains the stable internal
+book ID, exact embedded description, and title metadata. The collection stores
+the model ID, dimension, row count, and corpus fingerprint and is checked after
+ingestion. Chroma uses cosine distance for nearest-neighbor queries.
+
+The Chroma directory and flat artifacts are currently ignored because the
+dataset's redistribution permission is unresolved. They must not be pushed to
+the public repository until that blocker is resolved.
 
 ## Roadmap
 
-1. Implement deterministic dataset preparation and a tiny indexing smoke test.
-2. Integrate precomputed artifacts into Streamlit.
-3. Resolve redistribution rights, choose a concrete artifact host/commit
+1. Integrate the validated Chroma collection into Streamlit.
+2. Resolve redistribution rights, choose a concrete artifact host/commit
    strategy, and document Streamlit Community Cloud deployment.

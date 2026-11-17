@@ -12,4 +12,4 @@ venv/
 data/books.csv
 data/embeddings.npy
 data/manifest.json
-
+data/chroma/
