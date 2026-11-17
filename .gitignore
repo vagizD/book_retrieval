@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.DS_Store
+
+# Generated index artifacts are local until redistribution rights and a
+# deployment artifact strategy have been confirmed.
+data/books.csv
+data/embeddings.npy
+data/manifest.json
+

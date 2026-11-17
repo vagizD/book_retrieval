@@ -1,0 +1,7 @@
+datasets>=3.2,<4
+numpy>=1.26,<3
+pandas>=2.2,<3
+pytest>=8.3,<9
+sentence-transformers>=3.3,<4
+streamlit>=1.41,<2
+
