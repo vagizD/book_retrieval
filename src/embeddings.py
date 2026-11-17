@@ -157,7 +157,7 @@ def rebuild_chroma_collection(
     embeddings: np.ndarray,
     manifest: IndexManifest,
     *,
-    batch_size: int = 1_000,
+    batch_size: int = 100,
 ) -> Any:
     """Recreate and populate a cosine-distance Chroma collection.
 

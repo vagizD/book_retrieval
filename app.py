@@ -11,6 +11,7 @@ import streamlit as st
 
 from src.chroma_retrieval import search_chroma
 from src.config import IndexManifest
+from src.deployment import materialize_chroma_dir
 from src.embeddings import load_manifest, validate_chroma_collection
 
 LOGGER = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ def cached_collection(index_dir: str, manifest: IndexManifest) -> Any:
     """Open and validate the read-mostly persistent Chroma collection."""
     import chromadb
 
-    chroma_path = Path(index_dir) / "chroma"
+    chroma_path = materialize_chroma_dir(index_dir, manifest.corpus_sha256)
     if not chroma_path.is_dir():
         raise ValueError("Chroma persistence directory is missing")
     client = chromadb.PersistentClient(path=str(chroma_path))

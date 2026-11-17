@@ -17,7 +17,7 @@ def test_default_build_arguments() -> None:
     assert args.seed == 42
     assert args.output_dir == "data"
     assert args.batch_size == 64
-    assert args.chroma_batch_size == 1_000
+    assert args.chroma_batch_size == 100
     assert args.source_limit is None
 
 

@@ -56,8 +56,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--chroma-batch-size",
         type=int,
-        default=1_000,
-        help="Records per Chroma write (default: 1000).",
+        default=100,
+        help="Records per Chroma write (default: 100).",
     )
     parser.add_argument(
         "--min-description-characters",

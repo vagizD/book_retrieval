@@ -8,7 +8,8 @@ retained as an exact, independently tested reference implementation.
 
 ## Current status
 
-Phases 1-4 are complete. The offline pipeline cleans and deduplicates a
+Phases 1-5 are implemented; only creation of the public Streamlit app remains.
+The offline pipeline cleans and deduplicates a
 streamed source, performs deterministic seeded sampling, creates normalized
 embeddings, writes aligned CSV/NumPy/JSON artifacts, and batch-ingests them into
 an embedded Chroma cosine collection. The Streamlit app loads the validated
@@ -35,15 +36,19 @@ title plus normalized description and assign a stable internal `book_id` after
 deterministic selection. It will embed the cleaned description verbatim and
 record corpus/index alignment in a manifest.
 
-### Redistribution status
+### Usage and temporary-demo status
 
 The dataset card cites the UCSD Goodreads research but does **not** declare a
-license or an explicit redistribution grant. Therefore generated corpus and
-embedding artifacts are ignored and must not be committed or publicly hosted
-until the applicable source terms and redistribution permission are confirmed.
-This is a deployment blocker, not evidence that redistribution is permitted.
-If permission cannot be established, a replacement dataset with explicit terms
-must be proposed before changing sources.
+license or an explicit redistribution grant. This project uses it only for a
+short-lived, non-commercial course demonstration at the repository owner's
+direction. That does not establish redistribution rights. The public app and
+generated deployment index should be removed after the one-week demonstration,
+and the source terms should be confirmed before any longer-lived publication.
+
+To reduce exposure, `books.csv` and `embeddings.npy` remain ignored and are not
+published. The deployable Chroma store necessarily contains the selected text
+needed to return results, so making the app/repository public still exposes a
+derived data artifact; it should not be described as zero redistribution.
 
 ## Planned repository boundaries
 
@@ -126,29 +131,50 @@ book ID, exact embedded description, and title metadata. The collection stores
 the model ID, dimension, row count, and corpus fingerprint and is checked after
 ingestion. Chroma uses cosine distance for nearest-neighbor queries.
 
-The Chroma directory and flat artifacts are currently ignored because the
-dataset's redistribution permission is unresolved. They must not be pushed to
-the public repository until that blocker is resolved.
+For deployment, the repository includes only `data/manifest.json` and a packaged
+`data/chroma/`. The 141 MiB SQLite file is reproducibly gzip-compressed below
+GitHub's 100 MiB per-file limit, checked by SHA-256, and restored into `/tmp` at
+app startup; the smaller HNSW files remain alongside it. Create the package with
+`python scripts/package_chroma.py`. The raw corpus export (`data/books.csv`),
+duplicate NumPy matrix (`data/embeddings.npy`), and uncompressed SQLite database
+remain ignored. The app validates the restored Chroma row count, model,
+dimension, collection name, and corpus fingerprint before serving queries. This
+avoids rebuilding 20,000 embeddings on every Streamlit restart.
 
-## Small semantic smoke evaluation
+## Manual semantic smoke evaluation
 
-A local smoke run embedded 25 real rows selected from the first 500 source rows.
-The table records the top three results from that deliberately tiny corpus:
+The final 20,000-book corpus returned these top-three results during the local
+Phase 5 smoke test:
 
 | Query | Top results |
 | --- | --- |
-| atmospheric mystery in a secretive small town | *A Murder is Announced*; *Amadi's Snowman*; *The Visitor* |
-| dangerous journey through space and distant worlds | *The Visitor*; *The Complete Science Fiction Treasury of H.G. Wells*; *The Race for What's Left* |
-| moving story about family relationships and loss | *Emma*; *Doctor Who: The Child*; *The Color of Us* |
+| atmospheric mystery in a secretive small town | *The Wickerman*; *Haunted Missouri*; *The Trials* |
+| dangerous journey through space and distant worlds | *Starrigger*; *What Is Your Dangerous Idea?*; *Outside of Space* |
+| moving story about family relationships and loss | *Realer Than Real*; *Great Topics of the World: Essays*; *Missing Hailey* |
 
 This confirms that real rows flow through MiniLM, Chroma, and the UI; it is not
-an accuracy claim. The tiny prefix-limited corpus produces obvious misses. A
-meaningful evaluation must be repeated against the final deterministically
-sampled corpus, ideally alongside the proposed TF-IDF baseline.
+an accuracy claim. Several results are only loosely relevant, which is useful
+evidence of the limitations of description-only nearest-neighbor retrieval. A
+more meaningful evaluation should compare this system with a TF-IDF baseline
+using a small manually judged query set.
 
-## Roadmap
+## Deploy on Streamlit Community Cloud
 
-1. Resolve redistribution rights or select an explicitly licensed replacement.
-2. Build and evaluate the complete corpus, then choose a concrete artifact
-   distribution strategy.
-3. Deploy `app.py` on Streamlit Community Cloud and verify the public URL.
+1. Push `main` to the GitHub repository.
+2. Sign in to [Streamlit Community Cloud](https://share.streamlit.io/) with the
+   GitHub account that can access the repository.
+3. Choose **Create app**, select `vagizD/book_retrieval`, branch `main`, and
+   entrypoint `app.py`.
+4. Keep the default Python runtime from `runtime.txt`; no secrets are required.
+5. Deploy, then verify that the corpus caption appears and a query returns five
+   real rows rather than an index error.
+
+After the course demonstration, delete the Community Cloud app and remove the
+generated `data/chroma/` and `data/manifest.json` files from the public branch.
+Deleting only the current files does not erase Git history; if permanent removal
+is required, rewrite the affected history or replace the public repository.
+
+## Remaining deployment steps
+
+1. Push the verified Phase 5 commit and deployment artifacts.
+2. Create the Streamlit Community Cloud app and verify its public URL.

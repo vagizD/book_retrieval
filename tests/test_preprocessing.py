@@ -61,4 +61,3 @@ def test_seed_changes_selected_subset() -> None:
     second = prepare_books(records, max_books=8, seed=2, min_description_characters=10)
 
     assert set(first["book_id"]) != set(second["book_id"])
-

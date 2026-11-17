@@ -1,7 +1,9 @@
-chromadb>=1.5,<2
-datasets>=3.2,<4
-numpy>=1.26,<3
-pandas>=2.2,<3
-pytest>=8.3,<9
-sentence-transformers>=3.3,<4
-streamlit>=1.41,<2
+chromadb==1.5.9
+datasets==3.6.0
+numpy==1.26.4
+pandas==2.2.3
+pytest==8.3.5
+sentence-transformers==3.4.1
+streamlit==1.67.0
+torch==2.1.0
+transformers==4.44.2

@@ -1,0 +1,11 @@
+{
+  "collection_name": "goodreads_books",
+  "corpus_sha256": "7a2021ed9b45aea87e3523199c4f23c4dd4d11271431042eef5df0b2417b8ff2",
+  "dataset_id": "booksouls/goodreads-book-descriptions",
+  "dataset_revision": "306bc45168be592886e2211fbbe03828ee9da14f",
+  "embedding_dimension": 384,
+  "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+  "row_count": 20000,
+  "schema_version": 1,
+  "seed": 42
+}

@@ -7,7 +7,12 @@ venv/
 .env
 .DS_Store
 
-# Generated index artifacts are local until redistribution rights and a
-# deployment artifact strategy have been confirmed.
+# Generated flat artifacts contain the complete corpus and dense matrix.
+# Keep them local; only the deployment manifest and Chroma store are included.
 data/*
 !data/.gitkeep
+!data/manifest.json
+!data/chroma/
+!data/chroma/**
+# The packaged gzip is committed; the 100+ MiB SQLite source remains local.
+data/chroma/chroma.sqlite3
