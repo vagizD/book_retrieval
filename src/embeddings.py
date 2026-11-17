@@ -119,6 +119,18 @@ def load_artifacts(
     return books, embeddings, manifest
 
 
+def load_manifest(output_dir: str | Path) -> IndexManifest:
+    """Load and validate only the lightweight index manifest."""
+    manifest_path = Path(output_dir) / "manifest.json"
+    try:
+        values = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, OSError, json.JSONDecodeError) as error:
+        raise ValueError(f"unable to load index manifest: {error}") from error
+    if not isinstance(values, dict):
+        raise ValueError("manifest must contain a JSON object")
+    return IndexManifest.from_dict(values)
+
+
 def _validate_alignment(
     books: pd.DataFrame, embeddings: np.ndarray, manifest: IndexManifest
 ) -> None:

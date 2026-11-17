@@ -9,7 +9,5 @@ venv/
 
 # Generated index artifacts are local until redistribution rights and a
 # deployment artifact strategy have been confirmed.
-data/books.csv
-data/embeddings.npy
-data/manifest.json
-data/chroma/
+data/*
+!data/.gitkeep

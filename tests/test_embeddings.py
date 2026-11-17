@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 from src.config import MANIFEST_SCHEMA_VERSION, IndexManifest
+from src.chroma_retrieval import search_chroma
 from src.embeddings import (
     compute_corpus_sha256,
     encode_books,
@@ -30,6 +31,16 @@ class FakeBatchModel:
             dtype=np.float32,
         )
         return raw / np.linalg.norm(raw, axis=1, keepdims=True)
+
+
+class FakeQueryModel:
+    def __init__(self, vector: list[float]) -> None:
+        self.vector = vector
+        self.calls = 0
+
+    def encode(self, sentences: str, **kwargs: object) -> np.ndarray:
+        self.calls += 1
+        return np.asarray(self.vector, dtype=np.float32)
 
 
 def sample_books() -> pd.DataFrame:
@@ -124,7 +135,47 @@ def test_persistent_chroma_ingestion_and_query_smoke(tmp_path: Path) -> None:
         client, books, embeddings, manifest, batch_size=2
     )
     result = collection.query(query_embeddings=[[1.0, 0.0]], n_results=2)
+    recommendations = search_chroma(
+        "an eastern journey", FakeQueryModel([1, 0]), collection, k=2
+    )
 
     assert collection.count() == 3
     assert result["ids"][0][0] == books.loc[0, "book_id"]
     assert result["distances"][0] == sorted(result["distances"][0])
+    assert recommendations["book_id"].tolist()[0] == books.loc[0, "book_id"]
+    assert recommendations["similarity_score"].tolist() == sorted(
+        recommendations["similarity_score"].tolist(), reverse=True
+    )
+
+
+def test_chroma_search_rejects_blank_query_before_inference(tmp_path: Path) -> None:
+    books = sample_books()
+    embeddings = np.array([[1, 0], [0, 1], [-1, 0]], dtype=np.float32)
+    manifest = manifest_for(books, embeddings)
+    collection = rebuild_chroma_collection(
+        chromadb.PersistentClient(path=str(tmp_path / "chroma")),
+        books,
+        embeddings,
+        manifest,
+    )
+    model = FakeQueryModel([1, 0])
+
+    with pytest.raises(ValueError, match="query"):
+        search_chroma("   ", model, collection)
+
+    assert model.calls == 0
+
+
+def test_chroma_search_rejects_dimension_mismatch(tmp_path: Path) -> None:
+    books = sample_books()
+    embeddings = np.array([[1, 0], [0, 1], [-1, 0]], dtype=np.float32)
+    manifest = manifest_for(books, embeddings)
+    collection = rebuild_chroma_collection(
+        chromadb.PersistentClient(path=str(tmp_path / "chroma")),
+        books,
+        embeddings,
+        manifest,
+    )
+
+    with pytest.raises(ValueError, match="dimensions do not match"):
+        search_chroma("query", FakeQueryModel([1, 0, 0]), collection)

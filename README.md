@@ -8,12 +8,14 @@ retained as an exact, independently tested reference implementation.
 
 ## Current status
 
-Phases 1-3 are complete. The offline pipeline now cleans and deduplicates a
+Phases 1-4 are complete. The offline pipeline cleans and deduplicates a
 streamed source, performs deterministic seeded sampling, creates normalized
 embeddings, writes aligned CSV/NumPy/JSON artifacts, and batch-ingests them into
-an embedded Chroma cosine collection. Tests exercise the complete pipeline with
-a fake embedder and temporary persistent Chroma client, so tests do not download a
-dataset or transformer. The Streamlit UI is not implemented yet.
+an embedded Chroma cosine collection. The Streamlit app loads the validated
+collection and CPU embedding model once, accepts free-text prompts, and displays
+5 or 10 ranked results with accurately labeled cosine similarities. Tests use a
+fake embedder and temporary persistent Chroma client, so routine tests do not
+download a dataset or transformer.
 
 ## Verified dataset facts
 
@@ -98,6 +100,24 @@ named Chroma collection to prevent stale rows.
 Do not use `--source-limit` for a production build because it intentionally
 limits selection to an ordered prefix of the source.
 
+## Run the application
+
+The app expects an index beneath `data/` by default:
+
+```bash
+streamlit run app.py
+```
+
+To use a development or externally restored index, set its directory:
+
+```bash
+BOOK_INDEX_DIR=data/dev streamlit run app.py
+```
+
+The model and Chroma collection are cached per app process. The app does not
+re-embed the corpus at startup. Missing or malformed artifacts and failed
+queries produce visitor-friendly messages rather than exposed tracebacks.
+
 ## Chroma design
 
 The pipeline uses `chromadb.PersistentClient(path="data/chroma")` and explicit
@@ -110,8 +130,25 @@ The Chroma directory and flat artifacts are currently ignored because the
 dataset's redistribution permission is unresolved. They must not be pushed to
 the public repository until that blocker is resolved.
 
+## Small semantic smoke evaluation
+
+A local smoke run embedded 25 real rows selected from the first 500 source rows.
+The table records the top three results from that deliberately tiny corpus:
+
+| Query | Top results |
+| --- | --- |
+| atmospheric mystery in a secretive small town | *A Murder is Announced*; *Amadi's Snowman*; *The Visitor* |
+| dangerous journey through space and distant worlds | *The Visitor*; *The Complete Science Fiction Treasury of H.G. Wells*; *The Race for What's Left* |
+| moving story about family relationships and loss | *Emma*; *Doctor Who: The Child*; *The Color of Us* |
+
+This confirms that real rows flow through MiniLM, Chroma, and the UI; it is not
+an accuracy claim. The tiny prefix-limited corpus produces obvious misses. A
+meaningful evaluation must be repeated against the final deterministically
+sampled corpus, ideally alongside the proposed TF-IDF baseline.
+
 ## Roadmap
 
-1. Integrate the validated Chroma collection into Streamlit.
-2. Resolve redistribution rights, choose a concrete artifact host/commit
-   strategy, and document Streamlit Community Cloud deployment.
+1. Resolve redistribution rights or select an explicitly licensed replacement.
+2. Build and evaluate the complete corpus, then choose a concrete artifact
+   distribution strategy.
+3. Deploy `app.py` on Streamlit Community Cloud and verify the public URL.
